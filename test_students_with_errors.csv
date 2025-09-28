@@ -1,0 +1,7 @@
+studentName,parentName,parentPhone,parentRelationship,gender
+Ahmed Ben Ali,Fatima Ben Ali,+21698123456,Mother,Male
+Sara Mansouri,Mohamed Mansouri,+21698765432,Father,Female
+Invalid Student,Parent Name,123456,Unknown,Unknown
+Another Student,Parent Name,+21698123456,Invalid Relationship,Male
+Empty Student,,+21698123456,Mother,Female
+Good Student,Good Parent,+21698123456,Mother,Female

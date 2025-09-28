@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Debug Test</title>
+</head>
+<body>
+    <h1>CSV Debug Test</h1>
+    <input type="file" id="csvFile" accept=".csv">
+    <div id="output"></div>
+
+    <script>
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                console.log('File selected:', {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                });
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const csvText = e.target.result;
+                    console.log('CSV Content:');
+                    console.log(csvText);
+                    
+                    // Parse CSV
+                    const lines = csvText.split('\n').filter(line => line.trim());
+                    console.log('Lines:', lines.length);
+                    console.log('Headers:', lines[0]);
+                    console.log('First data row:', lines[1]);
+                    
+                    // Test FormData
+                    const formData = new FormData();
+                    formData.append('csvFile', file);
+                    formData.append('classId', 'test-class-id');
+                    
+                    console.log('FormData entries:');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`${key}:`, value);
+                    }
+                    
+                    document.getElementById('output').innerHTML = `
+                        <h3>CSV Analysis:</h3>
+                        <p><strong>File:</strong> ${file.name} (${file.size} bytes)</p>
+                        <p><strong>Lines:</strong> ${lines.length}</p>
+                        <p><strong>Headers:</strong> ${lines[0]}</p>
+                        <p><strong>First Row:</strong> ${lines[1]}</p>
+                        <pre>${csvText}</pre>
+                    `;
+                };
+                reader.readAsText(file);
+            }
+        });
+    </script>
+</body>
+</html>

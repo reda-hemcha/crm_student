@@ -1,0 +1,7 @@
+studentName,parentName,parentPhone,parentRelationship,gender
+Valid Student,Valid Parent,+21698123456,Mother,Male
+Invalid Phone Student,Parent Name,123456,Mother,Female
+Invalid Relationship Student,Parent Name,+21698123456,Invalid Rel,Male
+Empty Name Student,,+21698123456,Father,Female
+Invalid Gender Student,Parent Name,+21698123456,Mother,Unknown
+Valid Student 2,Valid Parent 2,+21698765432,Father,Female

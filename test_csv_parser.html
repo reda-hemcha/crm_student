@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Parser Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🧪 CSV Parser Test</h1>
+    
+    <div class="test-section info">
+        <h3>📁 Available Test Files</h3>
+        <ul>
+            <li><strong>comprehensive_test.csv</strong> - 15 valid students</li>
+            <li><strong>validation_test.csv</strong> - 6 students (2 valid, 4 invalid)</li>
+            <li><strong>single_student_test.csv</strong> - 1 student for quick test</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h3>📤 Upload CSV for Testing</h3>
+        <input type="file" id="csvFile" accept=".csv">
+        <button onclick="testCSV()">Test CSV</button>
+        <button onclick="downloadTemplate()">Download Template</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        function testCSV() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('Please select a CSV file first.', 'error');
+                return;
+            }
+
+            console.log('Testing CSV file:', {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvContent = e.target.result;
+                parseAndTestCSV(csvContent, file.name);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseAndTestCSV(csvContent, fileName) {
+            try {
+                const lines = csvContent.split('\n').filter(line => line.trim());
+                
+                if (lines.length < 2) {
+                    showResult('CSV file must have at least a header row and one data row', 'error');
+                    return;
+                }
+
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                const requiredHeaders = ['studentname', 'parentname', 'parentphone', 'parentrelationship', 'gender'];
+                
+                // Check headers
+                const missingHeaders = requiredHeaders.filter(req => !headers.includes(req));
+                if (missingHeaders.length > 0) {
+                    showResult(`Missing required headers: ${missingHeaders.join(', ')}`, 'error');
+                    return;
+                }
+
+                // Parse and validate rows
+                const results = [];
+                const errors = [];
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',').map(v => v.trim());
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = values[index] || '';
+                    });
+
+                    const validation = validateRow(row, i + 1);
+                    if (validation.isValid) {
+                        results.push({ row: i + 1, student: row.studentname, status: 'Valid' });
+                    } else {
+                        errors.push({ row: i + 1, student: row.studentname, error: validation.error });
+                    }
+                }
+
+                // Display results
+                const totalRows = lines.length - 1;
+                const validRows = results.length;
+                const invalidRows = errors.length;
+
+                let resultHTML = `
+                    <div class="test-section ${validRows === totalRows ? 'success' : 'info'}">
+                        <h3>📊 CSV Analysis Results</h3>
+                        <p><strong>File:</strong> ${fileName}</p>
+                        <p><strong>Total Rows:</strong> ${totalRows}</p>
+                        <p><strong>Valid Rows:</strong> ${validRows}</p>
+                        <p><strong>Invalid Rows:</strong> ${invalidRows}</p>
+                        <p><strong>Success Rate:</strong> ${Math.round((validRows/totalRows)*100)}%</p>
+                    </div>
+                `;
+
+                if (results.length > 0) {
+                    resultHTML += `
+                        <div class="test-section success">
+                            <h3>✅ Valid Students</h3>
+                            <pre>${results.map(r => `Row ${r.row}: ${r.student}`).join('\n')}</pre>
+                        </div>
+                    `;
+                }
+
+                if (errors.length > 0) {
+                    resultHTML += `
+                        <div class="test-section error">
+                            <h3>❌ Validation Errors</h3>
+                            <pre>${errors.map(e => `Row ${e.row}: ${e.student} - ${e.error}`).join('\n')}</pre>
+                        </div>
+                    `;
+                }
+
+                showResult(resultHTML, validRows === totalRows ? 'success' : 'info');
+
+            } catch (error) {
+                showResult(`Error parsing CSV: ${error.message}`, 'error');
+            }
+        }
+
+        function validateRow(row, rowNum) {
+            const errors = [];
+            
+            // Required fields
+            if (!row.studentname?.trim()) {
+                errors.push('Student name is required');
+            }
+            
+            if (!row.parentname?.trim()) {
+                errors.push('Parent name is required');
+            }
+            
+            if (!row.parentphone?.trim()) {
+                errors.push('Parent phone is required');
+            }
+            
+            // Phone format validation
+            const phoneRegex = /^\+[1-9]\d{1,14}$/;
+            if (!phoneRegex.test(row.parentphone?.replace(/\s/g, ''))) {
+                errors.push('Parent phone must be in international format (+1234567890)');
+            }
+            
+            // Relationship validation
+            const validRelationships = ['father', 'mother', 'guardian', 'grandfather', 'grandmother', 'uncle', 'aunt', 'other'];
+            if (!validRelationships.includes(row.parentrelationship?.toLowerCase())) {
+                errors.push('Parent relationship must be one of: Father, Mother, Guardian, Grandfather, Grandmother, Uncle, Aunt, Other');
+            }
+            
+            // Gender validation
+            if (!['male', 'female'].includes(row.gender?.toLowerCase())) {
+                errors.push('Gender must be Male or Female');
+            }
+            
+            return {
+                isValid: errors.length === 0,
+                error: errors.join(', ')
+            };
+        }
+
+        function showResult(message, type) {
+            const resultsDiv = document.getElementById('results');
+            if (type === 'error') {
+                resultsDiv.innerHTML = `<div class="test-section error">${message}</div>`;
+            } else if (type === 'success') {
+                resultsDiv.innerHTML = `<div class="test-section success">${message}</div>`;
+            } else {
+                resultsDiv.innerHTML = message;
+            }
+        }
+
+        function downloadTemplate() {
+            const csvContent = `studentName,parentName,parentPhone,parentRelationship,gender
+Ahmed Ben Ali,Fatima Ben Ali,+21698123456,Mother,Male
+Sara Mansouri,Mohamed Mansouri,+21698765432,Father,Female
+Omar Khelil,Aicha Khelil,+21695123456,Mother,Male`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'students_template.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Test with sample data on load
+        window.onload = function() {
+            const sampleCSV = `studentName,parentName,parentPhone,parentRelationship,gender
+Ahmed Ben Ali,Fatima Ben Ali,+21698123456,Mother,Male
+Invalid Student,Parent Name,123456,Unknown,Unknown`;
+
+            showResult(`
+                <div class="test-section info">
+                    <h3>🎯 Ready to Test!</h3>
+                    <p>Upload any of the generated CSV files to test the parser:</p>
+                    <ul>
+                        <li><strong>comprehensive_test.csv</strong> - 15 valid students</li>
+                        <li><strong>validation_test.csv</strong> - Mixed valid/invalid data</li>
+                        <li><strong>single_student_test.csv</strong> - Quick test with 1 student</li>
+                    </ul>
+                    <p>Or click "Download Template" to get a sample CSV file.</p>
+                </div>
+            `, 'info');
+        };
+    </script>
+</body>
+</html>
